@@ -1,0 +1,115 @@
+USE uts;
+
+/* ================= BAGIAN 1 ================= */
+
+-- SOAL 1: barang yang terjual secara kredit
+SELECT b.id_barang,
+       b.nama_barang,
+       SUBSTRING_INDEX(SUBSTRING_INDEX(t.detil_trx, '-', 2), '-', -1) AS jenis_pembayaran
+FROM transaksi t
+JOIN barang b ON b.id_barang = SUBSTRING_INDEX(t.detil_trx, '-', 1)
+WHERE t.detil_trx LIKE '%-Credit%';
+
+-- SOAL 2: transaksi beserta nama kasir
+SELECT t.id_trx, t.tgl_trx, t.detil_trx, k.nama_kasir
+FROM transaksi t
+JOIN kasir k ON k.id_kasir = t.id_kasir;
+
+-- SOAL 3: transaksi dengan nama barang dan kasir
+SELECT t.id_trx, t.tgl_trx, b.nama_barang, t.detil_trx, k.nama_kasir
+FROM transaksi t
+JOIN kasir  k ON k.id_kasir  = t.id_kasir
+JOIN barang b ON b.id_barang = SUBSTRING_INDEX(t.detil_trx, '-', 1);
+
+
+/* ================= SETUP BAGIAN 2 ================= */
+
+CREATE TABLE IF NOT EXISTS tb_mhs (
+  nim VARCHAR(5) NOT NULL,
+  namaMhs VARCHAR(30),
+  PRIMARY KEY (nim)
+);
+
+CREATE TABLE IF NOT EXISTS tb_mk (
+  kodeMK VARCHAR(5) NOT NULL,
+  namaMK VARCHAR(30),
+  sks INT,
+  PRIMARY KEY (kodeMK)
+);
+
+CREATE TABLE IF NOT EXISTS tb_ambilmk (
+  nim VARCHAR(5),
+  kodeMK VARCHAR(5),
+  nilai INT
+);
+
+INSERT INTO tb_mhs VALUES ('001','Joko'),('002','Amir'),('003','Budi');
+INSERT INTO tb_mk VALUES ('A01','Kalkulus',3),('A02','Geometri',2),('A03','Aljabar',3);
+INSERT INTO tb_ambilmk VALUES
+('001','A01',3),('001','A02',4),('001','A03',2),
+('002','A02',3),('002','A03',2),
+('003','A01',4),('003','A03',3);
+
+
+/* ================= BAGIAN 2 ================= */
+-- Catatan: kode di bawah mengikuti soal (MK01, MK02, MK03).
+-- Jika data Anda memakai A01, A02, A03, ganti kodenya.
+
+-- SOAL 4: nilai TERTINGGI di MK02
+SELECT m.namaMhs, a.nilai
+FROM tb_ambilmk a
+JOIN tb_mhs m ON m.nim = a.nim
+WHERE a.kodeMK = 'MK02'
+  AND a.nilai = (SELECT MAX(nilai) FROM tb_ambilmk WHERE kodeMK = 'MK02');
+
+-- SOAL 5: di MK03, nilai DI ATAS rata-rata
+SELECT m.nim, m.namaMhs
+FROM tb_ambilmk a
+JOIN tb_mhs m ON m.nim = a.nim
+WHERE a.kodeMK = 'MK03'
+  AND a.nilai > (SELECT AVG(nilai) FROM tb_ambilmk WHERE kodeMK = 'MK03');
+
+-- SOAL 6: mahasiswa yang TIDAK mengambil MK01
+SELECT m.namaMhs
+FROM tb_mhs m
+WHERE NOT EXISTS (SELECT 1 FROM tb_ambilmk a
+                  WHERE a.nim = m.nim AND a.kodeMK = 'MK01');
+
+-- SOAL 7: nilai terendah mahasiswa bernama RAHMA
+SELECT MIN(a.nilai) AS nilai_terendah
+FROM tb_ambilmk a
+JOIN tb_mhs m ON m.nim = a.nim
+WHERE m.namaMhs = 'RAHMA';
+
+-- SOAL 8: mahasiswa yang mengambil MK01
+SELECT m.namaMhs
+FROM tb_mhs m
+JOIN tb_ambilmk a ON a.nim = m.nim
+WHERE a.kodeMK = 'MK01';
+
+-- SOAL 9: di MK01, nilai DI BAWAH rata-rata
+SELECT m.nim, m.namaMhs
+FROM tb_ambilmk a
+JOIN tb_mhs m ON m.nim = a.nim
+WHERE a.kodeMK = 'MK01'
+  AND a.nilai < (SELECT AVG(nilai) FROM tb_ambilmk WHERE kodeMK = 'MK01');
+
+-- SOAL 10: mahasiswa dengan nilai = 4
+SELECT DISTINCT m.namaMhs
+FROM tb_mhs m
+JOIN tb_ambilmk a ON a.nim = m.nim
+WHERE a.nilai = 4;
+
+-- SOAL 11: nilai TERENDAH di MK03
+SELECT m.namaMhs, a.nilai
+FROM tb_ambilmk a
+JOIN tb_mhs m ON m.nim = a.nim
+WHERE a.kodeMK = 'MK03'
+  AND a.nilai = (SELECT MIN(nilai) FROM tb_ambilmk WHERE kodeMK = 'MK03');
+
+-- SOAL 12: mahasiswa yang mengambil mata kuliah KALKULUS
+SELECT m.namaMhs
+FROM tb_mhs m
+JOIN tb_ambilmk a ON a.nim    = m.nim
+JOIN tb_mk      k ON k.kodeMK = a.kodeMK
+WHERE k.namaMK = 'Kalkulus';
